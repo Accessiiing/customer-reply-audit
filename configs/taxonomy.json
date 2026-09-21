@@ -1,0 +1,20 @@
+{
+  "version": "taxonomy-v1",
+  "evidence_relations": ["supported", "contradicted", "unsupported", "uncertain"],
+  "issue_types": {
+    "factual_contradiction": {"label": "事实矛盾", "default_severity": "medium"},
+    "unsupported_assertion": {"label": "无依据断言", "default_severity": "medium"},
+    "fabricated_capability": {"label": "能力或操作虚构", "default_severity": "high"},
+    "material_omission": {"label": "关键条件遗漏／过度概括", "default_severity": "medium"},
+    "safety_denial": {"label": "安全限制被否定", "default_severity": "critical"}
+  },
+  "severity_order": ["none", "low", "medium", "high", "critical"],
+  "high_impact_tags": ["rights", "commitment", "address", "price", "product_parameter", "safety"],
+  "aggregation": {
+    "hallucination_relations": ["contradicted", "unsupported"],
+    "uncertain_without_confirmed_issue": "needs_review",
+    "confirmed_issue_with_other_uncertainty": "ok_true",
+    "system_or_schema_failure": "error"
+  }
+}
+

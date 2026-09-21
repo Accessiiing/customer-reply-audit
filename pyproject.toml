@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "customer-reply-audit"
+version = "0.1.0"
+description = "Evidence-grounded audit of customer-service replies"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.27,<1",
+  "pydantic>=2.9,<3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3,<9", "pytest-cov>=5,<7"]
+
+[project.scripts]
+reply-audit = "customer_reply_audit.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/customer_reply_audit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
