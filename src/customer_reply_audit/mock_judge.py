@@ -70,7 +70,11 @@ def judge(record: ReplyRecord) -> JudgeOutput:
 
     # Capability and completed-operation claims require an explicit capability/receipt.
     capability_limit = re.search(r"(?:未接入|不具备|不可口头告知|需人工后台操作)[^。；]*", kb)
-    operation_claim = re.search(r"(?:我帮您查|已经?帮您|已帮您|已升级|直接发到|会有专属客服|具体地址)", reply)
+    operation_claim = re.search(
+        r"(?:我帮您查|已经?帮您|已帮您|已升级|直接发到|会有专属客服|"
+        r"(?:退货)?请寄到|地址[是为：:]|[省市区县].{0,24}(?:路|街|号))",
+        reply,
+    )
     if capability_limit and operation_claim:
         claims.append(_claim(
             record, reply_needle=operation_claim.group(0), evidence_needle=capability_limit.group(0),
@@ -90,6 +94,19 @@ def judge(record: ReplyRecord) -> JudgeOutput:
             relation=EvidenceRelation.UNSUPPORTED, issue=IssueType.UNSUPPORTED_ASSERTION,
             severity=Severity.MEDIUM, reason="知识库没有提供支持该确定断言的证据；这不等于已证明现实中为假。",
             tags=["product_parameter" if "参数" in kb else "brand"],
+        ))
+
+    # Broad universal factual claims still require direct support.  This catches
+    # overclaiming without treating ordinary omissions as hallucinations.
+    universal = re.search(r"都是([^，。]+)", reply)
+    if universal and universal.group(1) not in kb:
+        claims.append(_claim(
+            record, reply_needle=universal.group(0), subject="商品或服务",
+            predicate="普遍属性", value=universal.group(1),
+            relation=EvidenceRelation.UNSUPPORTED, issue=IssueType.UNSUPPORTED_ASSERTION,
+            severity=Severity.MEDIUM,
+            reason="回复作出“都是”的普遍事实断言，但知识库没有提供直接支持。",
+            tags=["product_attribute"],
         ))
 
     # Explicit positive/negative conflicts for policies, discounts, channels and stores.
@@ -194,4 +211,3 @@ def judge(record: ReplyRecord) -> JudgeOutput:
             reason="受限 mock 规则未发现矛盾、无依据确定断言或关键遗漏；这不是完整语义证明。",
         ))
     return JudgeOutput(claims=claims)
-

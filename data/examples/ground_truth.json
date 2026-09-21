@@ -1,0 +1,5 @@
+[
+  {"id": "ex-supported", "is_hallucination": false, "hallucination_type": null, "detail": "与知识一致。"},
+  {"id": "ex-capability", "is_hallucination": true, "hallucination_type": "能力越界", "detail": "未接入接口却声称完成。"}
+]
+

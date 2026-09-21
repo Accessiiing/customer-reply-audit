@@ -32,7 +32,7 @@
 
 ## 运行模式
 
-- `real`：OpenAI-compatible Chat Completions API，温度 0。环境变量见 `.env.example`。
+- `real`：OpenAI-compatible Chat Completions API，温度 0。环境变量见 `.env.example`。schema 失败时只允许一次格式修复；第二次失败即 `error`，不无限重试。
 - `mock`：公开通用关系规则的受限演示；不读取标签，不按 ID 分支。它验证 schema、证据、评估和报告闭环，不能证明完整语义能力或泛化。
 
 ## 评估合同
@@ -44,4 +44,3 @@
 ## 可复现性
 
 每次检测创建唯一 `run_id`，记录输入、提示词和规则哈希、模型、参数、时间、耗时、usage（不可得即 unavailable）及 Git 状态。历史运行不覆盖。真实 API 输出保存后，评估可确定性复算。
-

@@ -44,9 +44,34 @@ class OpenAICompatibleJudge:
                 response.raise_for_status()
                 body = response.json()
                 content = body["choices"][0]["message"]["content"]
-                result = JudgeOutput.model_validate_json(content)
                 usage = body.get("usage") or {"tokens": "unavailable", "cost": "unavailable"}
-                return result, usage
+                try:
+                    return JudgeOutput.model_validate_json(content), usage
+                except ValueError as first_error:
+                    # One bounded format-only repair.  The prior content is data to
+                    # re-serialize, not an independent semantic authority.
+                    repair_payload = {
+                        "model": self.model,
+                        "temperature": 0,
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": "只修复 JSON 格式和 schema，不改变语义。只返回 JSON。Schema:\n" + json.dumps(schema, ensure_ascii=False)},
+                            {"role": "user", "content": content},
+                        ],
+                    }
+                    repaired = client.post(
+                        f"{self.base_url}/chat/completions",
+                        headers={"Authorization": f"Bearer {self.api_key}"},
+                        json=repair_payload,
+                    )
+                    repaired.raise_for_status()
+                    repaired_body = repaired.json()
+                    repaired_content = repaired_body["choices"][0]["message"]["content"]
+                    try:
+                        return JudgeOutput.model_validate_json(repaired_content), repaired_body.get("usage") or usage
+                    except ValueError as repair_error:
+                        raise ProviderError(f"format repair failed: {repair_error}") from first_error
+        except ProviderError:
+            raise
         except (httpx.HTTPError, KeyError, ValueError, json.JSONDecodeError) as exc:
             raise ProviderError(f"provider call failed: {type(exc).__name__}: {exc}") from exc
-
