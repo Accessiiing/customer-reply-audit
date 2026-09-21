@@ -114,6 +114,7 @@ TYPESAFE_DEFAULT_MODEL=jev-1.13.0
 | [docs/decisions/](docs/decisions/README.md) | 一次决策一个时间戳文件 |
 | [docs/jev-experiment.md](docs/jev-experiment.md) | 三版本实验与最终选择流程 |
 | [docs/evaluation.md](docs/evaluation.md) | 已验证规则基线与误判分析 |
+| [docs/verification.md](docs/verification.md) | 本地与远端干净克隆验证证据 |
 | [configs/jev-v1.json](configs/jev-v1.json) | Jev 版本、阈值和重试配置 |
 | [docs/screenshots/mock-report.png](docs/screenshots/mock-report.png) | 当前规则基线结果截图 |
 
