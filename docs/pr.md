@@ -1,21 +1,24 @@
-# PR 草案
+# Draft PR 状态
 
-标题：`feat: 客服回复幻觉检测与证据化评估`
+- PR：[feat: add three-version Jev evaluation pipeline](https://github.com/Accessiiing/customer-reply-audit/pull/1)
+- 分支：`feat/jev-system-one` → `main`
+- 状态：Draft
 
-## 说明
+## 已进入 PR
 
-实现方案 B：对客服回复逐项抽取并核对知识库证据，程序验证引用与状态聚合，再由隔离入口对照人工标签。提供 OpenAI-compatible 真实 provider、显式 mock、可复算评估与转义后的静态报告。
+- V1 `mock`、V2 `jev`、V3 `hybrid` 三种模式。
+- 显式污染输入派生与哈希清单。
+- 自动三版比较和冻结 winner 规则。
+- 时间戳决策档案。
+- 23 项测试。
 
-## 验证
+## 已验证
 
-- `python -m pytest`：16 passed
-- 选定 run：`20260921T042904Z-2883b270`（mock-rules-v2）
-- 20/20 有效判定；TP=18、FP=1、TN=1、FN=0
-- 误报 h16，漏报无；首轮 h07 漏检及调整保留在 CHANGELOG
+- `python -m pytest -q`：23 passed。
+- 当前派生输入：20 条；原附件未修改。
+- V1 新 run：TP=18、FP=1、TN=1、FN=0。
+- 无官方 Jev key 时，benchmark 在写部分结果前以退出码 2 失败。
 
-## 限制
+## Draft 退出条件
 
-- 未配置 API 凭证，真实模型效果未验证，mock 指标不能写成 LLM 指标。
-- 已知评测集、非盲测，不证明泛化。
-- 招聘原始附件和本地运行目录不纳入 Git。
-- 当前没有配置目标 remote，因此尚未创建 Draft PR。
+官方 Jev 三版真实比较、最终选择决策和公开结果尚未完成。完成前不得把 PR 标记 Ready，也不得把契约测试写成 Jev 效果。

@@ -9,5 +9,6 @@
 | 2026-09-21 16:01:29 | Jev 只负责类型化语义判断 | [jev-typed-judgment-boundary-20260921-160129.md](jev-typed-judgment-boundary-20260921-160129.md) |
 | 2026-09-21 16:01:30 | 原始附件污染时生成可追溯派生输入 | [source-input-contamination-20260921-160130.md](source-input-contamination-20260921-160130.md) |
 | 2026-09-21 16:01:31 | 最终版本只能由冻结排序规则产生 | [final-selection-policy-20260921-160131.md](final-selection-policy-20260921-160131.md) |
+| 2026-09-21 16:13:55 | 官方 Jev 实测完成前保持 Draft PR | [draft-until-live-benchmark-20260921-161355.md](draft-until-live-benchmark-20260921-161355.md) |
 
 最终赢家产生后，必须再新增一份 `final-version-selection-<time>.md`，记录三版真实指标和选择理由。
