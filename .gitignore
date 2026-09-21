@@ -7,4 +7,5 @@ htmlcov/
 *.pyc
 artifacts/runs/
 artifacts/current/
-
+artifacts/staging/
+artifacts/comparisons/

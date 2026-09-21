@@ -33,6 +33,9 @@ class Severity(StrEnum):
     CRITICAL = "critical"
 
 
+RunMode = Literal["real", "mock", "jev", "hybrid"]
+
+
 class ReplyRecord(StrictModel):
     id: str = Field(min_length=1)
     user_question: str = Field(min_length=1)
@@ -79,7 +82,7 @@ class JudgeOutput(StrictModel):
 
 class DetectionItem(StrictModel):
     id: str
-    mode: Literal["real", "mock"]
+    mode: RunMode
     status: Literal["ok", "needs_review", "error"]
     is_hallucination: bool | None
     issue_types: list[IssueType] = Field(default_factory=list)
@@ -104,7 +107,7 @@ class DetectionItem(StrictModel):
 
 class RunMetadata(StrictModel):
     run_id: str
-    mode: Literal["real", "mock"]
+    mode: RunMode
     input_path: str
     input_sha256: str
     taxonomy_version: str
@@ -124,4 +127,3 @@ class RunMetadata(StrictModel):
 class DetectionRun(StrictModel):
     metadata: RunMetadata
     items: list[DetectionItem]
-

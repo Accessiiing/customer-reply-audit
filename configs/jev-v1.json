@@ -1,0 +1,10 @@
+{
+  "version": "jev-questions-v1",
+  "default_model": "jev-1.13.0",
+  "relation_min_probability": 0.60,
+  "choice_min_confidence": 0.25,
+  "material_probability_threshold": 0.55,
+  "omission_min_probability": 0.60,
+  "max_retries": 2,
+  "retry_base_seconds": 0.5
+}

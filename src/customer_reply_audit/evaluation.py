@@ -124,6 +124,5 @@ def evaluation_markdown(result: dict[str, Any], baseline: dict[str, Any], *, run
 
 准确率 {format_metric(baseline['accuracy'])}，召回率 {format_metric(baseline['recall'])}，F1 {format_metric(baseline['f1'])}，正常回复误报率 {format_metric(baseline['normal_reply_false_positive_rate'])}，Balanced Accuracy {format_metric(baseline['balanced_accuracy'])}。
 
-> 指标只比较二分类标签。自定义多标签类型与人工单一类型没有同口径金标准，因此不报告类型准确率。`mock` 结果只证明受限规则流程，不证明真实模型效果或泛化能力。
+> 指标只比较二分类标签。自定义多标签类型与人工单一类型没有同口径金标准，因此不报告类型准确率。`mock` 只证明受限规则流程；Jev/混合结果也只代表本次固定数据与配置，不自动证明泛化能力。
 """
-

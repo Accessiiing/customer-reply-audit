@@ -34,7 +34,12 @@ def render_html(run: DetectionRun, evaluation: dict[str, Any], records: list[Rep
           <details><summary>知识库与逐项证据</summary><p>{html.escape(record.knowledge_base)}</p><ul>{claims}</ul></details>
           <p class="reason"><strong>类型：</strong>{html.escape(issue_labels)}<br><strong>结论：</strong>{html.escape(item.reason)}</p>
         </article>""")
-    mode_warning = "真实模型运行" if run.metadata.mode == "real" else "显式 MOCK：仅验证流程与受限规则，不代表真实模型效果"
+    mode_warning = {
+        "real": "生成式 LLM 真实运行",
+        "mock": "显式 MOCK：仅验证流程与受限规则，不代表真实模型效果",
+        "jev": "Jev System One 真实运行：类型化输出不保证语义判断正确",
+        "hybrid": "硬规则＋Jev 真实运行：确定性冲突与语义判断共同聚合",
+    }[run.metadata.mode]
     payload = json.dumps(evaluation, ensure_ascii=False, indent=2)
     document = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -65,4 +70,3 @@ document.querySelectorAll('button[data-filter]').forEach(b=>b.addEventListener('
 </script></body></html>"""
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(document, encoding="utf-8")
-
