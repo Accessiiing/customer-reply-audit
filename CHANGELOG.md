@@ -11,7 +11,7 @@
 - 新增 `benchmark`：同一输入连续运行 `mock / jev / hybrid` 并按冻结规则选择 winner。
 - 新增 `prepare-input`：原始 JSON 尾部污染时生成带双哈希与尾部哈希的 ignored 派生输入。
 - 新增时间戳决策档案；一次决策一个文件，不覆盖旧判断。
-- 测试从 16 项增加到 23 项，覆盖 Jev HTTP 契约、候选绑定、混合聚合、比较排序和污染输入。
+- 测试从 16 项增加到 26 项，覆盖 Jev HTTP 契约、鉴权预检、非瞬态错误不重试、候选绑定、混合聚合、比较排序和污染输入。
 
 ### Decisions
 
@@ -22,6 +22,7 @@
 
 ### Build Issues Encountered
 
+- 已配置 key 但 TypeSafe 账号零额度时官方返回 401；旧版把“有字符串”误当成“可运行”，并在 V2/V3 全失败时错误输出 V1 winner → 新增一次最小真实预检，401 立即停止且不写部分结果；任一版本失格时 `winner=null`。
 - 原始 `task4_replies.json` 在合法数组后多出 27 个尾部字符 → 严格加载继续失败；新增显式 `prepare-input`，不修改现场、不静默吞错。该坑同时记录于 SPEC“输入完整性”和独立决策文档。
 - 派生输入首次写盘时直接序列化 `list[ReplyRecord]` 导致 `TypeError` → 根因是通用 JSON 编码器不识别 Pydantic 列表；改为逐项 `model_dump()`，全套 23 项测试通过。
 

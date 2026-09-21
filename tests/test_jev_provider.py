@@ -70,6 +70,41 @@ def test_jev_http_contract_and_resolved_model(monkeypatch):
     assert judge.total_usage["requests"] == 1
 
 
+def test_jev_preflight_checks_auth_and_response_shape(monkeypatch):
+    monkeypatch.setenv("TYPESAFE_API_KEY", "test-key")
+
+    def handler(request: httpx.Request):
+        payload = json.loads(request.content)
+        assert payload["questions"]["reachable"]["type"] == "noul"
+        return httpx.Response(200, json={
+            "model": "jev-1.13.0",
+            "answers": {"reachable": {"type": "noul", "noul": 1.0}},
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        })
+
+    judge = JevJudge(transport=httpx.MockTransport(handler))
+    assert judge.preflight() == "jev-1.13.0"
+
+
+def test_jev_does_not_retry_unauthorized(monkeypatch):
+    monkeypatch.setenv("TYPESAFE_API_KEY", "invalid-key")
+    calls = 0
+
+    def handler(_request: httpx.Request):
+        nonlocal calls
+        calls += 1
+        return httpx.Response(401, json={"detail": "unauthorized"})
+
+    judge = JevJudge(transport=httpx.MockTransport(handler))
+    try:
+        judge.preflight()
+    except Exception as exc:
+        assert "HTTP 401" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("preflight should fail")
+    assert calls == 1
+
+
 def test_jev_contradiction_becomes_a_grounded_problem(monkeypatch):
     monkeypatch.setenv("TYPESAFE_API_KEY", "test-key")
     reply, knowledge = build_candidates(RECORD)
@@ -116,4 +151,3 @@ def test_hybrid_keeps_hard_rules_while_using_jev_semantics():
     item = aggregate(record, output, mode="hybrid")
     assert item.is_hallucination is True
     assert IssueType.FABRICATED_CAPABILITY in item.issue_types
-

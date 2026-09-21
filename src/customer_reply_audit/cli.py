@@ -19,6 +19,7 @@ from .mock_judge import judge as mock_judge
 from .models import DetectionRun, RunMetadata
 from .preparation import prepare_replies
 from .provider import OpenAICompatibleJudge
+from .provider import ProviderError
 from .report import render_html
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -212,8 +213,12 @@ def main() -> None:
         write_comparison(args.output_dir, comparison)
         print(f"winner={comparison['winner']} comparison={args.output_dir.resolve()}")
     elif args.command == "benchmark":
-        # Fail before writing a partial three-version experiment when credentials are absent.
-        JevJudge()
+        # Authenticate before writing any partial three-version experiment.
+        try:
+            preflight_model = JevJudge().preflight()
+        except ProviderError as exc:
+            parser.error(f"Jev preflight failed; no benchmark artifacts were written: {exc}")
+        print(f"jev_preflight=ok model={preflight_model}")
         run_dirs = {
             mode: detect(args.input, mode=mode, output_root=args.output_root)
             for mode in ("mock", "jev", "hybrid")
@@ -223,6 +228,8 @@ def main() -> None:
         comparison_dir = args.comparison_root / _run_id()
         write_comparison(comparison_dir, comparison)
         print(f"winner={comparison['winner']} comparison={comparison_dir.resolve()}")
+        if not comparison["experiment_complete"]:
+            raise SystemExit(2)
     else:
         run_dir = detect(args.input, mode=args.mode, output_root=args.output_root)
         predictions = run_dir / "predictions.json"

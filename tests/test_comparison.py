@@ -28,5 +28,20 @@ def test_comparison_prefers_balanced_accuracy_after_coverage():
         "hybrid": _run("hybrid", [True, True, False, False], 2.0),
     }, truth)
     assert comparison["winner"] == "hybrid"
+    assert comparison["experiment_complete"] is True
     assert comparison["ranking"][0] == "hybrid"
 
+
+def test_comparison_refuses_winner_when_any_version_has_errors():
+    truth = [TruthRecord(id="0", is_hallucination=True, detail="x")]
+    runs = {
+        "mock": _run("mock", [True], 0.1),
+        "jev": _run("jev", [True], 1.0),
+        "hybrid": _run("hybrid", [True], 2.0),
+    }
+    runs["jev"].items[0].status = "error"
+    runs["jev"].items[0].is_hallucination = None
+    comparison = compare_runs(runs, truth)
+    assert comparison["experiment_complete"] is False
+    assert comparison["winner"] is None
+    assert comparison["disqualified"] == ["jev"]

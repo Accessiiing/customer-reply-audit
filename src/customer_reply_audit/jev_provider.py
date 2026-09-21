@@ -203,13 +203,8 @@ class JevJudge:
     def resolved_model(self) -> str:
         return ",".join(sorted(self.resolved_models)) or self.model
 
-    def judge(self, record: ReplyRecord) -> tuple[JudgeOutput, dict[str, int | float | str]]:
-        reply_candidates, knowledge_candidates = build_candidates(record)
-        payload = {
-            "model": self.model,
-            "state": build_jev_state(record, reply_candidates, knowledge_candidates),
-            "questions": build_jev_questions(reply_candidates, knowledge_candidates),
-        }
+    def _request(self, payload: dict[str, Any]) -> tuple[dict[str, Any], float]:
+        """Send one Jev request, retrying only documented transient failures."""
         max_retries = int(self.config["max_retries"])
         started = time.perf_counter()
         try:
@@ -221,23 +216,64 @@ class JevJudge:
                             headers={"Authorization": f"Bearer {self.api_key}"},
                             json=payload,
                         )
-                        if response.status_code in {429, 529} and attempt < max_retries:
-                            self.total_retries += 1
-                            retry_after = response.headers.get("retry-after")
-                            wait_seconds = float(retry_after) if retry_after else float(self.config["retry_base_seconds"]) * (2 ** attempt)
-                            time.sleep(wait_seconds)
-                            continue
-                        response.raise_for_status()
-                        body = response.json()
-                        break
                     except httpx.HTTPError as exc:
-                        if attempt >= max_retries:
-                            raise ProviderError(f"Jev provider call failed: {type(exc).__name__}: {exc}") from exc
-                else:  # pragma: no cover - loop always exits through break/raise
-                    raise ProviderError("Jev provider retries exhausted")
+                        raise ProviderError(
+                            f"Jev provider call failed: {type(exc).__name__}: {exc}"
+                        ) from exc
+
+                    if response.status_code in {429, 529} and attempt < max_retries:
+                        self.total_retries += 1
+                        retry_after = response.headers.get("retry-after")
+                        wait_seconds = (
+                            float(retry_after)
+                            if retry_after
+                            else float(self.config["retry_base_seconds"]) * (2 ** attempt)
+                        )
+                        time.sleep(wait_seconds)
+                        continue
+
+                    try:
+                        response.raise_for_status()
+                    except httpx.HTTPStatusError as exc:
+                        raise ProviderError(
+                            f"Jev provider call failed: HTTP {response.status_code}"
+                        ) from exc
+                    body = response.json()
+                    if not isinstance(body, dict):
+                        raise ProviderError("Jev response body is not an object")
+                    return body, time.perf_counter() - started
         finally:
-            duration = time.perf_counter() - started
-            self.total_duration_seconds += duration
+            self.total_duration_seconds += time.perf_counter() - started
+
+        raise ProviderError("Jev provider retries exhausted")  # pragma: no cover
+
+    def preflight(self) -> str:
+        """Verify authentication and response shape before writing benchmark runs."""
+        body, _ = self._request({
+            "model": self.model,
+            "state": "credential preflight",
+            "questions": {
+                "reachable": {
+                    "type": "noul",
+                    "instructions": "Is this text present?",
+                }
+            },
+        })
+        model = body.get("model")
+        answers = body.get("answers")
+        if not isinstance(model, str) or not isinstance(answers, dict):
+            raise ProviderError("Jev preflight response is missing model or answers")
+        _noul(answers, "reachable")
+        return model
+
+    def judge(self, record: ReplyRecord) -> tuple[JudgeOutput, dict[str, int | float | str]]:
+        reply_candidates, knowledge_candidates = build_candidates(record)
+        payload = {
+            "model": self.model,
+            "state": build_jev_state(record, reply_candidates, knowledge_candidates),
+            "questions": build_jev_questions(reply_candidates, knowledge_candidates),
+        }
+        body, duration = self._request(payload)
 
         model = body.get("model")
         answers = body.get("answers")

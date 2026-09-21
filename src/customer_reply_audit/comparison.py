@@ -31,9 +31,6 @@ def compare_runs(runs: dict[str, DetectionRun], truth: list[TruthRecord]) -> dic
         mode for mode, data in versions.items()
         if data["evaluation"]["unresolved"]["error_count"] == 0
     ]
-    if not eligible:
-        raise ValueError("no version is eligible: every run contains system errors")
-
     def score(mode: str) -> tuple:
         data = versions[mode]
         result = data["evaluation"]
@@ -47,12 +44,17 @@ def compare_runs(runs: dict[str, DetectionRun], truth: list[TruthRecord]) -> dic
             -DEPENDENCY_PREFERENCE[mode],
         )
 
-    winner = max(eligible, key=score)
+    experiment_complete = len(eligible) == len(EXPECTED_MODES)
+    ranking = sorted(eligible, key=score, reverse=True)
+    winner = ranking[0] if experiment_complete else None
     return {
         "policy_version": "final-selection-policy-v1",
+        "experiment_complete": experiment_complete,
         "winner": winner,
         "versions": versions,
-        "ranking": sorted(eligible, key=score, reverse=True),
+        "ranking": ranking,
+        "eligible": eligible,
+        "disqualified": [mode for mode in EXPECTED_MODES if mode not in eligible],
     }
 
 
@@ -78,8 +80,10 @@ def comparison_markdown(comparison: dict[str, Any]) -> str:
 
 ## 最终选择
 
-- 胜出版本：`{comparison['winner']}`
-- 排名：{' → '.join(comparison['ranking'])}
+- 实验是否完整：`{comparison['experiment_complete']}`
+- 胜出版本：`{comparison['winner'] or '未产生'}`
+- 有效排名：{' → '.join(comparison['ranking']) or '无'}
+- 失格版本：{', '.join(comparison['disqualified']) or '无'}
 """
 
 
