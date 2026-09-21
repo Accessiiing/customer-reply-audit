@@ -22,6 +22,17 @@ PROMPT = ROOT / "prompts" / "detect-v1.md"
 TAXONOMY = ROOT / "configs" / "taxonomy.json"
 
 
+def _load_local_env(path: Path) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
 def _git_version() -> str:
     try:
         sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=True).stdout.strip()
@@ -42,7 +53,7 @@ def detect(input_path: Path, *, mode: str, output_root: Path) -> Path:
     usage: dict[str, int | float | str] = {"tokens": "unavailable", "cost": "unavailable"}
     if mode == "mock":
         judge = mock_judge
-        model = "deterministic-mock-rules-v1"
+        model = "deterministic-mock-rules-v2"
     else:
         provider = OpenAICompatibleJudge(prompt_path=PROMPT)
         model = provider.model
@@ -92,6 +103,7 @@ def evaluate_run(predictions: Path, truth_path: Path) -> tuple[dict, Path]:
 
 
 def main() -> None:
+    _load_local_env(ROOT / ".env")
     parser = argparse.ArgumentParser(prog="reply-audit")
     sub = parser.add_subparsers(dest="command", required=True)
     detect_parser = sub.add_parser("detect", help="detect replies without reading ground truth")
@@ -106,20 +118,31 @@ def main() -> None:
     report_parser.add_argument("--evaluation", type=Path, required=True)
     report_parser.add_argument("--input", type=Path, required=True)
     report_parser.add_argument("--output", type=Path)
+    run_parser = sub.add_parser("run", help="detect, then independently evaluate and render")
+    run_parser.add_argument("--input", type=Path, required=True)
+    run_parser.add_argument("--truth", type=Path, required=True)
+    run_parser.add_argument("--mode", choices=["real", "mock"], default="real")
+    run_parser.add_argument("--output-root", type=Path, default=ROOT / "artifacts" / "runs")
 
     args = parser.parse_args()
     if args.command == "detect":
         detect(args.input, mode=args.mode, output_root=args.output_root)
     elif args.command == "evaluate":
         evaluate_run(args.predictions, args.truth)
-    else:
+    elif args.command == "report":
         run = load_run(args.predictions)
         evaluation_payload = json.loads(args.evaluation.read_text(encoding="utf-8"))["result"]
         output = args.output or args.predictions.parent / "report.html"
         render_html(run, evaluation_payload, load_replies(args.input), output)
         print(f"report={output.resolve()}")
+    else:
+        run_dir = detect(args.input, mode=args.mode, output_root=args.output_root)
+        predictions = run_dir / "predictions.json"
+        result, _ = evaluate_run(predictions, args.truth)
+        run = load_run(predictions)
+        render_html(run, result, load_replies(args.input), run_dir / "report.html")
+        print(f"report={(run_dir / 'report.html').resolve()}")
 
 
 if __name__ == "__main__":
     main()
-

@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ex-supported",
+    "user_question": "支持货到付款吗？",
+    "system_reply": "目前不支持货到付款，可以使用支付宝。",
+    "knowledge_base": "支付政策：不支持货到付款，支持支付宝。"
+  },
+  {
+    "id": "ex-capability",
+    "user_question": "订单地址改好了吗？",
+    "system_reply": "已经帮您修改完成。",
+    "knowledge_base": "客服系统未接入订单修改接口，需转人工处理。"
+  }
+]
+
